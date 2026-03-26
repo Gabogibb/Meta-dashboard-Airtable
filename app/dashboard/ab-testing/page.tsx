@@ -1,83 +1,72 @@
-'use client'
+import { fetchDashboardData } from '@/lib/airtable'
 
-import { useMetrics } from '@/lib/hooks/useMetrics'
-import { LoadingSkeleton } from '@/components/LoadingSkeleton'
+export const revalidate = 300
 
-export default function ABTestingPage() {
-  const { data, loading, error, refetch } = useMetrics()
+export default async function ABTestingPage() {
+  const data = await fetchDashboardData()
+  const { abTests } = data
 
-  if (loading) {
-    return <LoadingSkeleton />
-  }
-
-  if (error) {
-    return (
-      <div className="rounded-lg border border-red-200 bg-red-50 p-6">
-        <h2 className="text-lg font-semibold text-red-800">Error Loading A/B Tests</h2>
-        <p className="text-red-700 mt-2">{error}</p>
-        <button
-          onClick={refetch}
-          className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium"
-        >
-          Retry
-        </button>
-      </div>
-    )
-  }
-
-  if (!data || data.abTests.length === 0) {
-    return (
-      <div className="rounded-lg border border-slate-200 bg-white p-6">
-        <h1 className="text-2xl font-bold text-slate-900 mb-4">A/B Testing</h1>
-        <p className="text-slate-600">No A/B test data available yet.</p>
-      </div>
-    )
-  }
-
-  const tests = [...data.abTests].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+  const avgACR = abTests.reduce((sum: number, t: any) => sum + t.variantACR, 0) / abTests.length
+  const avgBCR = abTests.reduce((sum: number, t: any) => sum + t.variantBCR, 0) / abTests.length
 
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-slate-900">A/B Testing Dashboard</h1>
 
-      {/* Active Tests */}
-      <div className="space-y-4">
-        <h2 className="text-lg font-semibold text-slate-900">Recent Tests ({tests.length} total)</h2>
+      {/* Summary Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="rounded-lg border border-slate-200 bg-white p-6">
+          <p className="text-sm font-medium text-slate-600">Total Tests</p>
+          <p className="text-3xl font-bold text-slate-900 mt-2">{abTests.length}</p>
+        </div>
+        <div className="rounded-lg border border-slate-200 bg-white p-6">
+          <p className="text-sm font-medium text-slate-600">Avg CR (Variant A)</p>
+          <p className="text-3xl font-bold text-blue-600 mt-2">{avgACR.toFixed(1)}%</p>
+        </div>
+        <div className="rounded-lg border border-slate-200 bg-white p-6">
+          <p className="text-sm font-medium text-slate-600">Avg CR (Variant B)</p>
+          <p className="text-3xl font-bold text-emerald-600 mt-2">{avgBCR.toFixed(1)}%</p>
+        </div>
+        <div className="rounded-lg border border-slate-200 bg-white p-6">
+          <p className="text-sm font-medium text-slate-600">A Wins</p>
+          <p className="text-3xl font-bold text-slate-900 mt-2">
+            {abTests.filter((t: any) => t.currentLeader === 'Variant A').length} / {abTests.length}
+          </p>
+        </div>
+      </div>
+
+      {/* Tests Table */}
+      <div className="rounded-lg border border-slate-200 bg-white p-6">
+        <h2 className="text-lg font-semibold text-slate-900 mb-4">All Tests</h2>
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full text-sm">
             <thead className="border-b border-slate-200 bg-slate-50">
               <tr>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900">Date</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900">Test Period</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900">Variant A</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900">CR A</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900">Variant B</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900">CR B</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900">Difference</th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900">Leader</th>
+                <th className="px-4 py-3 text-left font-semibold text-slate-900">Date</th>
+                <th className="px-4 py-3 text-left font-semibold text-slate-900">Variant A</th>
+                <th className="px-4 py-3 text-right font-semibold text-slate-900">Views</th>
+                <th className="px-4 py-3 text-right font-semibold text-slate-900">CR A</th>
+                <th className="px-4 py-3 text-left font-semibold text-slate-900">Variant B</th>
+                <th className="px-4 py-3 text-right font-semibold text-slate-900">Views</th>
+                <th className="px-4 py-3 text-right font-semibold text-slate-900">CR B</th>
+                <th className="px-4 py-3 text-right font-semibold text-slate-900">Diff</th>
+                <th className="px-4 py-3 text-left font-semibold text-slate-900">Leader</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200">
-              {tests.slice(0, 20).map((test) => (
-                <tr key={test.id} className="hover:bg-slate-50">
-                  <td className="px-6 py-4 text-sm text-slate-900">{test.date}</td>
-                  <td className="px-6 py-4 text-sm text-slate-900">{test.testPeriod}</td>
-                  <td className="px-6 py-4 text-sm text-slate-700">{test.variantA}</td>
-                  <td className="px-6 py-4 text-sm font-medium text-slate-900">
-                    {(test.variantACR * 100).toFixed(2)}%
+            <tbody className="divide-y divide-slate-100">
+              {abTests.map((test: any, idx: number) => (
+                <tr key={idx} className="hover:bg-slate-50">
+                  <td className="px-4 py-3 text-slate-900 font-medium">{test.date}</td>
+                  <td className="px-4 py-3 text-slate-700 truncate max-w-[150px]">{test.variantA}</td>
+                  <td className="px-4 py-3 text-right text-slate-700">{test.variantAPageViews}</td>
+                  <td className="px-4 py-3 text-right font-bold text-blue-600">{test.variantACR}%</td>
+                  <td className="px-4 py-3 text-slate-700 truncate max-w-[150px]">{test.variantB}</td>
+                  <td className="px-4 py-3 text-right text-slate-700">{test.variantBPageViews}</td>
+                  <td className="px-4 py-3 text-right font-bold text-emerald-600">{test.variantBCR}%</td>
+                  <td className={`px-4 py-3 text-right font-medium ${test.crDifference > 0 ? 'text-emerald-600' : test.crDifference < 0 ? 'text-red-600' : 'text-slate-500'}`}>
+                    {test.crDifference > 0 ? '+' : ''}{test.crDifference}pp
                   </td>
-                  <td className="px-6 py-4 text-sm text-slate-700">{test.variantB}</td>
-                  <td className="px-6 py-4 text-sm font-medium text-slate-900">
-                    {(test.variantBCR * 100).toFixed(2)}%
-                  </td>
-                  <td className={`px-6 py-4 text-sm font-medium ${
-                    test.crDifference > 0 ? 'text-green-600' : test.crDifference < 0 ? 'text-red-600' : 'text-slate-600'
-                  }`}>
-                    {test.crDifference > 0 ? '+' : ''}{(test.crDifference * 100).toFixed(2)}%
-                  </td>
-                  <td className={`px-6 py-4 text-sm font-semibold ${
-                    test.currentLeader === 'Variant A' ? 'text-green-600' : 'text-blue-600'
-                  }`}>
+                  <td className={`px-4 py-3 font-semibold ${test.currentLeader === 'Variant A' ? 'text-blue-600' : test.currentLeader === 'Variant B' ? 'text-emerald-600' : 'text-amber-600'}`}>
                     {test.currentLeader}
                   </td>
                 </tr>
@@ -87,25 +76,18 @@ export default function ABTestingPage() {
         </div>
       </div>
 
-      {/* Stats */}
-      {data.abTestMetrics && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="rounded-lg border border-slate-200 bg-white p-6">
-            <p className="text-sm text-slate-600">Avg Conversions (A)</p>
-            <p className="text-2xl font-bold text-slate-900 mt-2">{data.abTestMetrics.averageAConversions.toFixed(0)}</p>
-          </div>
-          <div className="rounded-lg border border-slate-200 bg-white p-6">
-            <p className="text-sm text-slate-600">Avg Conversions (B)</p>
-            <p className="text-2xl font-bold text-slate-900 mt-2">{data.abTestMetrics.averageBConversions.toFixed(0)}</p>
-          </div>
-          <div className="rounded-lg border border-slate-200 bg-white p-6">
-            <p className="text-sm text-slate-600">Avg CR Difference</p>
-            <p className="text-2xl font-bold text-slate-900 mt-2">
-              {(data.abTestMetrics.averageCRDifference * 100).toFixed(2)}%
-            </p>
-          </div>
+      {/* Notes */}
+      <div className="rounded-lg border border-slate-200 bg-white p-6">
+        <h2 className="text-lg font-semibold text-slate-900 mb-4">Test Notes</h2>
+        <div className="space-y-3">
+          {abTests.map((test: any, idx: number) => (
+            <div key={idx} className="flex gap-3 text-sm">
+              <span className="text-slate-500 shrink-0">{test.date}</span>
+              <span className="text-slate-700">{test.notes}</span>
+            </div>
+          ))}
         </div>
-      )}
+      </div>
     </div>
   )
 }
