@@ -40,14 +40,16 @@ export function useMetrics() {
 
         // Transform data
         const abTests = (json.abTests || [])
-          .map(transformABTest)
-          .filter((t): t is ABTest => t !== null)
+          .map((r: any) => transformABTest(r))
+          .filter((t: ABTest | null): t is ABTest => t !== null)
 
         const funnelRecords = (json.funnelData || [])
-          .map(transformFunnelRecord)
-          .filter((r): r is FunnelRecord => r !== null)
+          .map((r: any) => transformFunnelRecord(r))
+          .filter((r: FunnelRecord | null): r is FunnelRecord => r !== null)
 
-        const metaAds = (json.metaAds || []).map(transformMetaAd).filter((a): a is MetaAd => a !== null)
+        const metaAds = (json.metaAds || [])
+          .map((a: any) => transformMetaAd(a))
+          .filter((a: MetaAd | null): a is MetaAd => a !== null)
 
         setData({
           abTests,
@@ -82,14 +84,16 @@ export function useMetrics() {
       const json = await response.json()
 
       const abTests = (json.abTests || [])
-        .map(transformABTest)
-        .filter((t): t is ABTest => t !== null)
+        .map((r: any) => transformABTest(r))
+        .filter((t: ABTest | null): t is ABTest => t !== null)
 
       const funnelRecords = (json.funnelData || [])
-        .map(transformFunnelRecord)
-        .filter((r): r is FunnelRecord => r !== null)
+        .map((r: any) => transformFunnelRecord(r))
+        .filter((r: FunnelRecord | null): r is FunnelRecord => r !== null)
 
-      const metaAds = (json.metaAds || []).map(transformMetaAd).filter((a): a is MetaAd => a !== null)
+      const metaAds = (json.metaAds || [])
+        .map((a: any) => transformMetaAd(a))
+        .filter((a: MetaAd | null): a is MetaAd => a !== null)
 
       setData({
         abTests,
