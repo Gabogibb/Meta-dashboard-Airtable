@@ -1,5 +1,6 @@
 import { fetchDashboardData } from '@/lib/airtable'
 import { KPICard } from '@/components/KPICard'
+import { SimpleBarChart } from '@/components/BarChart'
 
 // Revalidate every 5 minutes to sync with Airtable
 export const revalidate = 300
@@ -115,26 +116,15 @@ export default async function OverviewPage() {
 
         <div className="rounded-xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-6 hover:shadow-lg transition-shadow">
           <h2 className="text-lg font-semibold text-slate-900 mb-5">Geographic Distribution</h2>
-          <div className="space-y-4">
-            {funnel.topCountries.slice(0, 6).map((country: any, idx: number) => {
-              const percentage = (country.count / funnel.topCountries[0].count) * 100
-              const colors = ['bg-blue-500', 'bg-indigo-500', 'bg-purple-500', 'bg-pink-500', 'bg-rose-500', 'bg-orange-500']
-              return (
-                <div key={idx}>
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-medium text-slate-900">{country.name}</p>
-                    <p className="text-sm font-bold text-slate-900">{country.count}</p>
-                  </div>
-                  <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full ${colors[idx]} rounded-full transition-all duration-500`}
-                      style={{ width: `${percentage}%` }}
-                    />
-                  </div>
-                </div>
-              )
-            })}
-          </div>
+          <SimpleBarChart
+            data={funnel.topCountries.slice(0, 8).map((country: any) => ({
+              name: country.name,
+              value: country.count
+            }))}
+            color="#3b82f6"
+            height={300}
+          />
+          <p className="text-xs text-slate-500 mt-4 text-center">Top countries by registrations</p>
         </div>
       </div>
 
