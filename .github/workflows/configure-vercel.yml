@@ -1,0 +1,65 @@
+name: Configure Vercel Environment Variables
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - claude/airtable-dashboard-vercel-nna37
+    paths:
+      - '.github/workflows/configure-vercel.yml'
+
+jobs:
+  configure-env:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set Vercel Environment Variables
+        run: |
+          PROJECT_ID="prj_HkxWtDSJsCHgcwirIhe3mozKHJpW"
+          TEAM_ID="team_9lfhdNbGLg4Q3U3Kx1rVWnJU"
+
+          # Set AIRTABLE_API_KEY
+          curl -X POST "https://api.vercel.com/v10/projects/${PROJECT_ID}/env" \
+            -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "key": "AIRTABLE_API_KEY",
+              "value": "${{ secrets.AIRTABLE_API_KEY }}",
+              "target": ["production", "preview", "development"],
+              "type": "encrypted"
+            }'
+
+          # Set AIRTABLE_BASE_ID
+          curl -X POST "https://api.vercel.com/v10/projects/${PROJECT_ID}/env" \
+            -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "key": "AIRTABLE_BASE_ID",
+              "value": "appQHdlwIGlr1Asye",
+              "target": ["production", "preview", "development"],
+              "type": "plain"
+            }'
+
+          # Set GOOGLE_SHEETS_ID
+          curl -X POST "https://api.vercel.com/v10/projects/${PROJECT_ID}/env" \
+            -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "key": "GOOGLE_SHEETS_ID",
+              "value": "17S5kCMPvlHr9ZJoh0G5pvyYqrdXZSH5X8yvbqkQKPG0",
+              "target": ["production", "preview", "development"],
+              "type": "plain"
+            }'
+
+          echo "Environment variables set successfully!"
+
+      - name: Trigger Vercel Deployment
+        run: |
+          PROJECT_ID="prj_HkxWtDSJsCHgcwirIhe3mozKHJpW"
+
+          # Wait a moment for env vars to propagate
+          sleep 2
+
+          # List deployments to verify
+          curl -X GET "https://api.vercel.com/v10/projects/${PROJECT_ID}/deployments?limit=1" \
+            -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" \
+            -H "Content-Type: application/json" | jq '.'
