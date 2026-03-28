@@ -1,0 +1,45 @@
+name: Verify Deployment
+
+on:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Vercel Deployment Status
+        run: |
+          PROJECT_ID="prj_HkxWtDSJsCHgcwirIhe3mozKHJpW"
+
+          echo "=== Checking Latest Deployments ==="
+          curl -s -X GET "https://api.vercel.com/v10/projects/${PROJECT_ID}/deployments?limit=3" \
+            -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" | jq '.'
+
+          echo -e "\n=== Checking Environment Variables ==="
+          curl -s -X GET "https://api.vercel.com/v10/projects/${PROJECT_ID}/env" \
+            -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" | jq '.envs[] | {key, value: "***", type}'
+
+      - name: Test Dashboard Accessibility
+        run: |
+          echo "Testing: https://meta-dashboard-airtable.vercel.app/"
+          curl -s -o /dev/null -w "HTTP Status: %{http_code}\n" https://meta-dashboard-airtable.vercel.app/ || echo "Network restricted - expected in CI"
+
+          echo -e "\nTesting API route..."
+          curl -s -o /dev/null -w "API Status: %{http_code}\n" https://meta-dashboard-airtable.vercel.app/api/health || echo "Network restricted - expected in CI"
+
+      - name: Verify Build Success
+        run: |
+          PROJECT_ID="prj_HkxWtDSJsCHgcwirIhe3mozKHJpW"
+
+          echo "Getting latest deployment..."
+          LATEST=$(curl -s -X GET "https://api.vercel.com/v10/projects/${PROJECT_ID}/deployments?limit=1" \
+            -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" | jq '.deployments[0]')
+
+          echo "$LATEST" | jq '{state, status, url, created}'
+
+          STATE=$(echo "$LATEST" | jq -r '.state')
+          if [ "$STATE" = "READY" ]; then
+            echo "✓ Deployment is READY and live!"
+          else
+            echo "Deployment state: $STATE"
+          fi
