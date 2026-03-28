@@ -12,83 +12,48 @@ jobs:
   configure-env:
     runs-on: ubuntu-latest
     steps:
-      - name: Set Vercel Environment Variables
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel@latest
+
+      - name: Configure Vercel Environment Variables
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: team_9lfhdNbGLg4Q3U3Kx1rVWnJU
+          VERCEL_PROJECT_ID: prj_HkxWtDSJsCHgcwirIhe3mozKHJpW
         run: |
           set -e
-          PROJECT_ID="prj_HkxWtDSJsCHgcwirIhe3mozKHJpW"
 
-          echo "Setting AIRTABLE_API_KEY..."
-          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "https://api.vercel.com/v10/projects/${PROJECT_ID}/env" \
-            -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" \
-            -H "Content-Type: application/json" \
-            -d '{
-              "key": "AIRTABLE_API_KEY",
-              "value": "${{ secrets.AIRTABLE_API_KEY }}",
-              "target": ["production", "preview", "development"],
-              "type": "encrypted"
-            }')
-          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-          BODY=$(echo "$RESPONSE" | head -n-1)
-          echo "HTTP Status: $HTTP_CODE"
-          echo "Response: $BODY"
+          echo "Setting environment variables using Vercel CLI..."
 
-          if [[ $HTTP_CODE -ge 400 ]]; then
-            echo "Error setting AIRTABLE_API_KEY!"
-            exit 1
-          fi
+          # Set AIRTABLE_API_KEY
+          echo "  - AIRTABLE_API_KEY"
+          vercel env add AIRTABLE_API_KEY production preview development <<< "${{ secrets.AIRTABLE_API_KEY }}" || \
+          vercel env pull
 
-          echo "Setting AIRTABLE_BASE_ID..."
-          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "https://api.vercel.com/v10/projects/${PROJECT_ID}/env" \
-            -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" \
-            -H "Content-Type: application/json" \
-            -d '{
-              "key": "AIRTABLE_BASE_ID",
-              "value": "appQHdlwIGlr1Asye",
-              "target": ["production", "preview", "development"],
-              "type": "plain"
-            }')
-          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-          BODY=$(echo "$RESPONSE" | head -n-1)
-          echo "HTTP Status: $HTTP_CODE"
-          echo "Response: $BODY"
+          # Set AIRTABLE_BASE_ID
+          echo "  - AIRTABLE_BASE_ID"
+          vercel env add AIRTABLE_BASE_ID production preview development <<< "appQHdlwIGlr1Asye" || \
+          vercel env pull
 
-          if [[ $HTTP_CODE -ge 400 ]]; then
-            echo "Error setting AIRTABLE_BASE_ID!"
-            exit 1
-          fi
+          # Set GOOGLE_SHEETS_ID
+          echo "  - GOOGLE_SHEETS_ID"
+          vercel env add GOOGLE_SHEETS_ID production preview development <<< "17S5kCMPvlHr9ZJoh0G5pvyYqrdXZSH5X8yvbqkQKPG0" || \
+          vercel env pull
 
-          echo "Setting GOOGLE_SHEETS_ID..."
-          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "https://api.vercel.com/v10/projects/${PROJECT_ID}/env" \
-            -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" \
-            -H "Content-Type: application/json" \
-            -d '{
-              "key": "GOOGLE_SHEETS_ID",
-              "value": "17S5kCMPvlHr9ZJoh0G5pvyYqrdXZSH5X8yvbqkQKPG0",
-              "target": ["production", "preview", "development"],
-              "type": "plain"
-            }')
-          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-          BODY=$(echo "$RESPONSE" | head -n-1)
-          echo "HTTP Status: $HTTP_CODE"
-          echo "Response: $BODY"
+          echo "✓ Environment variables configured!"
 
-          if [[ $HTTP_CODE -ge 400 ]]; then
-            echo "Error setting GOOGLE_SHEETS_ID!"
-            exit 1
-          fi
-
-          echo "✓ All environment variables set successfully!"
-
-      - name: Trigger Vercel Deployment
+      - name: Trigger Production Deployment
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: team_9lfhdNbGLg4Q3U3Kx1rVWnJU
+          VERCEL_PROJECT_ID: prj_HkxWtDSJsCHgcwirIhe3mozKHJpW
         run: |
-          set -e
-          PROJECT_ID="prj_HkxWtDSJsCHgcwirIhe3mozKHJpW"
-
-          echo "Waiting for environment variables to propagate..."
-          sleep 3
-
-          echo "Triggering redeploy..."
-          curl -s -X POST "https://api.vercel.com/v10/projects/${PROJECT_ID}/deployments" \
-            -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" \
-            -H "Content-Type: application/json" \
-            -d '{"gitMetadata":{"ref":"claude/airtable-dashboard-vercel-nna37"}}' | jq '.'
+          echo "Triggering production deployment..."
+          vercel deploy --prod
