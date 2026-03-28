@@ -1,0 +1,35 @@
+name: Deploy with Environment Variables
+
+on:
+  push:
+    branches:
+      - claude/airtable-dashboard-vercel-nna37
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_ORG_ID: team_9lfhdNbGLg4Q3U3Kx1rVWnJU
+      VERCEL_PROJECT_ID: prj_HkxWtDSJsCHgcwirIhe3mozKHJpW
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Pull Vercel Environment
+        run: vercel pull --yes --environment=production
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build Project
+        run: vercel build --prod
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy to Vercel
+        run: |
+          echo "Deploying to Vercel..."
+          vercel deploy --prebuilt --prod
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}

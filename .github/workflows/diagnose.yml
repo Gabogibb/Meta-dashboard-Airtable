@@ -1,0 +1,35 @@
+name: Diagnose Setup
+
+on:
+  workflow_dispatch:
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Vercel CLI
+        run: |
+          npm install -g vercel@latest
+          vercel --version
+          echo "Vercel CLI installed successfully"
+
+      - name: Test Vercel Token
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: team_9lfhdNbGLg4Q3U3Kx1rVWnJU
+          VERCEL_PROJECT_ID: prj_HkxWtDSJsCHgcwirIhe3mozKHJpW
+        run: |
+          echo "Testing Vercel authentication..."
+          vercel teams list 2>&1 | head -20 || true
+
+          echo -e "\n\nTesting project access..."
+          vercel project inspect 2>&1 | head -20 || true
+
+      - name: Check Secret Values
+        run: |
+          echo "Airtable API Key length: ${#AIRTABLE_API_KEY}"
+          echo "Airtable API Key starts with: ${AIRTABLE_API_KEY:0:20}..."
+          echo "Airtable Base ID: $AIRTABLE_BASE_ID"
+        env:
+          AIRTABLE_API_KEY: ${{ secrets.AIRTABLE_API_KEY }}
+          AIRTABLE_BASE_ID: appQHdlwIGlr1Asye
